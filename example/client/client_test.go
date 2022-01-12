@@ -7,6 +7,7 @@ import (
 
 	vp_client "github.com/shenjing023/vivy-polaris/client"
 	"github.com/shenjing023/vivy-polaris/contrib/registry"
+	"github.com/shenjing023/vivy-polaris/contrib/tracing"
 	er "github.com/shenjing023/vivy-polaris/errors"
 	"github.com/shenjing023/vivy-polaris/example/common"
 	"github.com/shenjing023/vivy-polaris/example/pb"
@@ -123,4 +124,32 @@ func TestRateLimit(t *testing.T) {
 		t.Logf("could not greet: %v", s)
 	}
 	t.Logf("Greeting: %s", r.GetMessage())
+}
+
+func TestTracing(t *testing.T) {
+	ctx := context.Background()
+
+	jaegerCollectURL := "http://10.0.0.215:14268/api/traces"
+	tp, err := tracing.NewJaegerTracerProvider(jaegerCollectURL, "test-client")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			t.Fatalf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
+	conn, err := vp_client.NewClientConn(addr, options.WithInsecure(), options.WithClientTracing(tp))
+	if err != nil {
+		t.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewGreeterClient(conn)
+
+	resp, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("reply:%s", resp.Message)
 }

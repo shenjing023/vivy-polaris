@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 
 	"github.com/shenjing023/vivy-polaris/contrib/registry"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
@@ -88,5 +92,13 @@ func WithEtcdDiscovery(conf clientv3.Config, serviceDesc grpc.ServiceDesc) Clien
 			panic(err)
 		}
 		resolver.Register(r)
+	})
+}
+
+func WithClientTracing(tp *sdktrace.TracerProvider) ClientOption {
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	return newFuncClientOption(func(o *clientOptions) {
+		o.opts = append(o.opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	})
 }
