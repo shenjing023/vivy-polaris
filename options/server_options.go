@@ -29,9 +29,6 @@ func WithDebug(flag bool) ServerOption {
 	if !flag {
 		return newFuncServerOption(func(so *serverOptions) {})
 	}
-	log.SetConsoleLogger(
-		log.WithLevel(log.DebugLevel),
-	)
 	return newFuncServerOption(func(so *serverOptions) {
 		so.interceptors = append(so.interceptors, func(ctx context.Context, req interface{},
 			info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
