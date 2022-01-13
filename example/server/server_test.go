@@ -115,7 +115,7 @@ func TestRateLimit(t *testing.T) {
 }
 
 func TestDebug(t *testing.T) {
-	srv := vp_server.NewServer(options.WithDebug())
+	srv := vp_server.NewServer(options.WithDebug(true))
 	pb.RegisterGreeterServer(srv, &test_server{})
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {
@@ -140,7 +140,7 @@ func TestTracing(t *testing.T) {
 		}
 	}()
 
-	srv := vp_server.NewServer(options.WithDebug(), options.WithServerTracing(tp))
+	srv := vp_server.NewServer(options.WithDebug(true), options.WithServerTracing(tp))
 	pb.RegisterGreeterServer(srv, &test_server{})
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {

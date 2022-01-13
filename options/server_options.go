@@ -25,7 +25,10 @@ func WithTBRL(pairs ...ratelimit.TBPair) ServerOption {
 	})
 }
 
-func WithDebug() ServerOption {
+func WithDebug(flag bool) ServerOption {
+	if !flag {
+		return newFuncServerOption(func(so *serverOptions) {})
+	}
 	log.SetConsoleLogger(
 		log.WithLevel(log.DebugLevel),
 	)
