@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
@@ -47,10 +48,10 @@ func (d *etcdResolver) Build(target resolver.Target, cc resolver.ClientConn, opt
 		d.cc.UpdateState(resolver.State{Addresses: addrList})
 		go d.watch(prefix, addrList)
 	} else {
-		return nil, fmt.Errorf("etcd get failed, prefix: %s", prefix)
+		return nil, errors.Errorf("etcd get failed, prefix[%s]: %+v", prefix, err)
 	}
 
-	return d, err
+	return d, nil
 }
 
 func (d *etcdResolver) Scheme() string {

@@ -2,9 +2,9 @@ package registry
 
 import (
 	"context"
-	"fmt"
 	"net"
 
+	"github.com/cockroachdb/errors"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 )
@@ -26,7 +26,7 @@ func WithTTL(ttl int64) Option {
 func NewEtcdRegister(conf clientv3.Config, serviceDesc grpc.ServiceDesc, host, port string, opts ...Option) (*etcdRegister, error) {
 	cli, err := clientv3.New(conf)
 	if err != nil {
-		return nil, fmt.Errorf("create etcd clientv3 client failed, errmsg:%v", err)
+		return nil, errors.Errorf("create etcd clientv3 client failed: %v", err)
 	}
 
 	r := &etcdRegister{
@@ -42,7 +42,7 @@ func NewEtcdRegister(conf clientv3.Config, serviceDesc grpc.ServiceDesc, host, p
 	defer cancel()
 	resp, err := cli.Grant(ctx, r.ttl)
 	if err != nil {
-		return nil, fmt.Errorf("grant failed, errmsg:%v", err)
+		return nil, errors.Errorf("etcd grant failed: %v", err)
 	}
 
 	//  schema:///serviceName/ip:port ->ip:port
@@ -52,20 +52,19 @@ func NewEtcdRegister(conf clientv3.Config, serviceDesc grpc.ServiceDesc, host, p
 
 	//set key->value
 	if _, err := cli.Put(ctx, serviceKey, serviceValue, clientv3.WithLease(resp.ID)); err != nil {
-		return nil, fmt.Errorf("put failed, errmsg:%v， key:%s, value:%s", err, serviceKey, serviceValue)
+		return nil, errors.Errorf("etcd put failed, errmsg:%v， key:%s, value:%s", err, serviceKey, serviceValue)
 	}
 
 	//keepalive
 	kresp, err := cli.KeepAlive(context.Background(), resp.ID)
 	if err != nil {
-		return nil, fmt.Errorf("keepalive faild, errmsg:%v, lease id:%d", err, resp.ID)
+		return nil, errors.Errorf("etcd keepalive faild, errmsg:%v, lease id:%d", err, resp.ID)
 	}
 
 	go func() {
 	FLOOP:
 		for v := range kresp {
 			if v == nil {
-				fmt.Println("etcd keepalive closed")
 				break FLOOP
 			}
 		}
