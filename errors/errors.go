@@ -11,6 +11,7 @@ import (
 
 	"bou.ke/monkey"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/cockroachdb/errors"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -115,8 +116,20 @@ func init() {
 }
 
 func (e *Error) Error() string {
-	return e.Err.Error()
+	return fmt.Sprintf("%s: %+v", e.Code, e.Err)
 }
+
+func (e *Error) Format(s fmt.State, verb rune) {
+	errors.FormatError(e, s, verb)
+}
+
+// if don't want print stack message, use this
+// func (e *Error) SafeFormatError(p errors.Printer) (next error) {
+// 	if p.Detail() {
+// 		p.Printf("code[%s]: %s", errors.Safe(e.Code), errors.Safe(e.Err.Error()))
+// 	}
+// 	return e.Err
+// }
 
 // ServiceErr2GRPCErr serviceErr covert to GRPCErr
 func ServiceErr2GRPCErr(err error) error {
