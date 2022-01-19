@@ -152,6 +152,7 @@ func TestTracing(t *testing.T) {
 func TestError2(t *testing.T) {
 	var ts test_server
 	monkey.PatchInstanceMethod(reflect.TypeOf(&ts), "SayHello", func(_ *test_server, _ context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+		// err, _ := status.New(codes.Code(pb.Code_ERROR1), "test error").WithDetails(&pb.Error{Code: pb.Code_ERROR1, Message: "custom test error"})
 		log.Printf("Received: %v", in.GetName())
 		return nil, er.NewServiceErr(codes.Code(pb.Code_ERROR1), errors.New("test error"))
 	})
