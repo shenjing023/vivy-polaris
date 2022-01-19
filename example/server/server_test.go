@@ -23,6 +23,7 @@ import (
 	"github.com/shenjing023/vivy-polaris/options"
 	vp_server "github.com/shenjing023/vivy-polaris/server"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"google.golang.org/grpc/codes"
 )
 
 var (
@@ -145,5 +146,19 @@ func TestTracing(t *testing.T) {
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {
 		t.Fatalf("failed to serve: %v", err)
+	}
+}
+
+func TestError2(t *testing.T) {
+	var ts test_server
+	monkey.PatchInstanceMethod(reflect.TypeOf(&ts), "SayHello", func(_ *test_server, _ context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+		log.Printf("Received: %v", in.GetName())
+		return nil, er.NewServiceErr(codes.Code(pb.Code_ERROR1), errors.New("test error"))
+	})
+	srv := vp_server.NewServer()
+	pb.RegisterGreeterServer(srv, &test_server{})
+	t.Logf("server listening at %v", lis.Addr())
+	if err := srv.Serve(lis); err != nil {
+		t.Logf("failed to serve: %v", err)
 	}
 }
