@@ -13,6 +13,7 @@ import (
 	"github.com/shenjing023/vivy-polaris/example/pb"
 	"github.com/shenjing023/vivy-polaris/options"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -152,4 +153,63 @@ func TestTracing(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("reply:%s", resp.Message)
+}
+
+func TestError(t *testing.T) {
+	// Set up a connection to the server.
+	conn, err := vp_client.NewClientConn(addr, options.WithInsecure())
+	if err != nil {
+		t.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewGreeterClient(conn)
+
+	// Contact the server and print out its response.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		s, _ := status.FromError(err)
+		for _, detail := range s.Details() {
+			switch v := detail.(type) {
+			case *pb.Error:
+				t.Logf("Error: %s", v.Message)
+			default:
+				t.Logf("Error: %+v", v)
+			}
+		}
+		t.Fatalf("could not greet: %+v", s)
+	}
+	t.Logf("Greeting: %s", r.GetMessage())
+}
+
+func TestRetry2(t *testing.T) {
+	retry := options.RetryPolicy{
+		MaxAttempts:          3,
+		MaxBackoff:           "3s",
+		InitialBackoff:       ".1s",
+		BackoffMultiplier:    5,
+		RetryableStatusCodes: []string{pb.Code_name[int32(pb.Code_ERROR1)]},
+		// RetryableStatusCodes: []string{common.CodeMap[common.CUSTOM_ERR_CODE1]},
+	}
+	mc := options.MethodConfig{
+		Name: []options.MethodName{
+			{Service: pb.Greeter_ServiceDesc.ServiceName, Method: "SayHello"},
+		},
+		RetryPolicy: retry,
+	}
+	conn, err := vp_client.NewClientConn(addr, options.WithInsecure(), options.WithRetry(mc))
+	if err != nil {
+		t.Fatalf("net.Connect err: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewGreeterClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	resp, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		s := er.Convert(err)
+		t.Fatalf("could not greet: %+v", s.Message())
+	}
+	t.Logf("Greeting: %s", resp.GetMessage())
 }

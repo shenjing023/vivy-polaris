@@ -4,7 +4,7 @@ import (
 	"github.com/shenjing023/vivy-polaris/errors"
 	"github.com/shenjing023/vivy-polaris/options"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

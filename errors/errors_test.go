@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"errors"
 
@@ -36,8 +37,9 @@ func TestMonkeyPatch(t *testing.T) {
 }
 
 func TestWrap(t *testing.T) {
-	t.Logf("%+v", a())
+	startTime := time.Now()
 	t.Logf("%+v", b())
+	t.Logf("cost:%s", time.Since(startTime))
 	// fmt.Printf("%+v \n", a())
 	// fmt.Printf("%+v \n", b())
 }
@@ -49,7 +51,7 @@ func a() error {
 
 func b() error {
 	err := c()
-	return erro.Wrap(err, "c error")
+	return NewServiceErr(0, err)
 }
 
 func c() error {
