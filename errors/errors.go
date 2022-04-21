@@ -10,9 +10,7 @@ import (
 	_ "unsafe"
 
 	"bou.ke/monkey"
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/cockroachdb/errors"
-	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -168,36 +166,36 @@ func RegisterErrCode(pairs ...CodePair) {
 }
 
 // GRPCErr2GQLErr grpc error convert to gql_service error
-func GRPCErr2GQLErr(ctx context.Context, err error, conf map[Code]string) error {
-	st, ok := status.FromError(err)
-	if !ok {
-		// Error was not a status error
-		return &gqlerror.Error{
-			Path:    graphql.GetPath(ctx),
-			Message: InternalError,
-			Extensions: map[string]interface{}{
-				"code": Internal,
-			},
-		}
-	}
-	var (
-		errMsg = st.Message()
-		code   = Unknown
-	)
-	for k, v := range conf {
-		if k == st.Code() {
-			errMsg = v
-			code = errMap[k]
-			break
-		}
-	}
-	return &gqlerror.Error{
-		Message: errMsg,
-		Extensions: map[string]interface{}{
-			"code": code,
-		},
-	}
-}
+// func GRPCErr2GQLErr(ctx context.Context, err error, conf map[Code]string) error {
+// 	st, ok := status.FromError(err)
+// 	if !ok {
+// 		// Error was not a status error
+// 		return &gqlerror.Error{
+// 			Path:    graphql.GetPath(ctx),
+// 			Message: InternalError,
+// 			Extensions: map[string]interface{}{
+// 				"code": Internal,
+// 			},
+// 		}
+// 	}
+// 	var (
+// 		errMsg = st.Message()
+// 		code   = Unknown
+// 	)
+// 	for k, v := range conf {
+// 		if k == st.Code() {
+// 			errMsg = v
+// 			code = errMap[k]
+// 			break
+// 		}
+// 	}
+// 	return &gqlerror.Error{
+// 		Message: errMsg,
+// 		Extensions: map[string]interface{}{
+// 			"code": code,
+// 		},
+// 	}
+// }
 
 // ServerErrorInterceptor transfer a error to status error
 func ServerErrorInterceptor(ctx context.Context, req interface{},

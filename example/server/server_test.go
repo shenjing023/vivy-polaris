@@ -163,3 +163,7 @@ func TestError2(t *testing.T) {
 		t.Logf("failed to serve: %v", err)
 	}
 }
+
+type Number interface {
+	int | float64
+}
