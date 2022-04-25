@@ -1,19 +1,29 @@
 package main
 
 import (
+	_ "embed"
 	"errors"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"text/template"
 	"time"
+
+	vtemplate "github.com/shenjing023/vivy-polaris/template"
 )
 
-// var (
-// 	//go:embed template/config/config.go
-// 	configFileTemplate string
-// )
+var (
+	//go:embed template/config/config.go
+	configFileTemplate []byte
+	//go:embed template/main_template.tpl
+	serverFileTemplate string
+	//go:embed template/repository/driver.tpl
+	driverFileTemplate string
+	//go:embed template/internal/handler.tpl
+	handlerFileTemplate string
+)
 
 func main() {
 	// mkdir config
@@ -25,9 +35,61 @@ func main() {
 		panic(err)
 	}
 	// mkdir repository
-	if err := os.Mkdir("repository", os.ModePerm); err != nil {
+	if err := os.MkdirAll("repository/ent", os.ModePerm); err != nil {
 		panic(err)
 	}
+	// mkdir grpc
+	if err := os.MkdirAll(Cfg.Protobuf.DstDir, os.ModePerm); err != nil {
+		panic(err)
+	}
+	os.WriteFile("config/config.go", configFileTemplate, os.ModePerm)
+
+	// generate proto file
+	generateProtoFile(Cfg.Protobuf.SourceDir, Cfg.Protobuf.DstDir, Cfg.Protobuf.CompileFiles...)
+
+	// generate server file
+	data := struct {
+		PkgName    string
+		ServerName string
+		GRPCPath   string
+	}{
+		PkgName:    vtemplate.ImportPathForDir("."),
+		ServerName: Cfg.ServerName,
+		GRPCPath:   Cfg.Protobuf.DstDir,
+	}
+	f, err := os.Create("main.go")
+	if err != nil {
+		panic(err)
+	}
+	if err := template.Must(template.New("main.go").Parse(serverFileTemplate)).Execute(f, data); err != nil {
+		panic(err)
+	}
+
+	// generate repository driver file
+	f, err = os.Create("repository/driver.go")
+	if err != nil {
+		panic(err)
+	}
+	if err := template.Must(template.New("driver.go").Parse(driverFileTemplate)).Execute(f, data); err != nil {
+		panic(err)
+	}
+
+	// generate handler file
+	f, err = os.Create("internal/handler.go")
+	if err != nil {
+		panic(err)
+	}
+	if err := template.Must(template.New("handler.go").Parse(handlerFileTemplate)).Execute(f, data); err != nil {
+		panic(err)
+	}
+
+	// go mod tidy
+	cmd := exec.Command("go", "mod", "tidy")
+	output, err := RunExecCommand(cmd, false, 30)
+	if err != nil {
+		panic(err)
+	}
+	log.Println(output)
 }
 
 /*

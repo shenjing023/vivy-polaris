@@ -1,0 +1,9 @@
+protobuf:
+  source_dir: "./protobuf"
+  dst_dir: "gen/go"
+  compile_files:
+    - "account_service.proto"
+    - "enums.proto"
+
+mod_name: "test" # 对应go mod的名称
+server_name: "AccountService" # 对应proto文件中服务的名称

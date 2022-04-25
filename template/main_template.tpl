@@ -1,4 +1,4 @@
-pakcage main
+package main
 
 import (
     "flag"
@@ -10,8 +10,10 @@ import (
 	"syscall"
 
     log "github.com/shenjing023/llog"
-	conf "github.com/shenjing023/vivy-polaris/template/config"
+	conf "{{.PkgName}}/config"
 	vp_server "github.com/shenjing023/vivy-polaris/server"
+	handler "{{.PkgName}}/internal"
+	pb "{{.PkgName}}/{{.GRPCPath}}"
 )
 
 var (
@@ -35,7 +37,7 @@ func runServer() {
 		log.Fatalf("failed to listen: %+v", err)
 	}
 	s := vp_server.NewServer()
-	pb.RegisterGreeterServer(s, &handler.Server{})
+	pb.Register{{.ServerName}}Server(s, &handler.Server{})
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %+v", err)
