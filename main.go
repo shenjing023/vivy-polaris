@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-var (
-	//go:embed template/config/config.go
-	configFileTemplate string
-)
+// var (
+// 	//go:embed template/config/config.go
+// 	configFileTemplate string
+// )
 
 func main() {
 	// mkdir config
@@ -30,9 +30,29 @@ func main() {
 	}
 }
 
-func generateProtoFile() {
-	//protoc --proto_path=./protos_tmp --go_out=./gen/go --go-grpc_out=./gen/go ./protos_tmp/*/*.proto
-	cmd := exec.Command("protoc", "--proto_path=./protos_tmp", "--go_out=./gen/go", "./protos_tmp/*/*.proto")
+/*
+   protoDir: proto文件路径目录
+   dstDir: 生成的go文件路径目录
+   protoFiles: 指定需要的proto文件名称
+*/
+func generateProtoFile(protoDir, dstDir string, protoFiles ...string) {
+	cmds := []string{
+		"--proto_path=" + protoDir,
+		"--go_out=" + dstDir,
+		"--go_opt=paths=source_relative",
+		"--go-grpc_out=" + dstDir,
+		"--go-grpc_opt=paths=source_relative",
+		// strings.Join(protoFiles, " "), // 注意：protoFiles不能放在这里，否则exec会把这个当成一个文件名
+	}
+	for _, f := range protoFiles {
+		cmds = append(cmds, f)
+	}
+	cmd := exec.Command("protoc", cmds...)
+	output, err := RunExecCommand(cmd, false, 3)
+	if err != nil {
+		log.Println(output)
+		panic(err)
+	}
 }
 
 func RunExecCommand(cmd *exec.Cmd, stdout bool, timeout int) (string, error) {
