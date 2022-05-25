@@ -164,6 +164,11 @@ func TestError2(t *testing.T) {
 	}
 }
 
-type Number interface {
-	int | float64
+func TestValidate(t *testing.T) {
+	srv := vp_server.NewServer(options.WithServerValidator(false))
+	pb.RegisterGreeterServer(srv, &test_server{})
+	t.Logf("server listening at %v", lis.Addr())
+	if err := srv.Serve(lis); err != nil {
+		t.Logf("failed to serve: %v", err)
+	}
 }

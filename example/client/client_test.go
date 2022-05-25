@@ -213,3 +213,27 @@ func TestRetry2(t *testing.T) {
 	}
 	t.Logf("Greeting: %s", resp.GetMessage())
 }
+
+func TestValidator(t *testing.T) {
+	// Set up a connection to the server.
+	conn, err := vp_client.NewClientConn(addr, options.WithInsecure(), options.WithClientValidator(true))
+	if err != nil {
+		t.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := pb.NewGreeterClient(conn)
+
+	// Contact the server and print out its response.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r, err := c.SayHello(ctx, &pb.HelloRequest{
+		Name: name,
+		Id:   1111,
+		Id2:  222,
+	})
+	if err != nil {
+		s := er.Convert(err)
+		t.Fatalf("could not greet: %v", s)
+	}
+	t.Logf("Greeting: %s", r.GetMessage())
+}

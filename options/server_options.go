@@ -7,6 +7,7 @@ import (
 	"github.com/shenjing023/vivy-polaris/contrib/ratelimit"
 
 	log "github.com/shenjing023/llog"
+	"github.com/shenjing023/vivy-polaris/contrib/validator"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -55,5 +56,13 @@ func WithServerTracing(tp *sdktrace.TracerProvider) ServerOption {
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	return newFuncServerOption(func(so *serverOptions) {
 		so.interceptors = append(so.interceptors, otelgrpc.UnaryServerInterceptor())
+	})
+}
+
+// WithServerValidator validate fields,
+// all==true return all fields error, otherwise return first error
+func WithServerValidator(all bool) ServerOption {
+	return newFuncServerOption(func(so *serverOptions) {
+		so.interceptors = append(so.interceptors, validator.UnaryServerInterceptor(all))
 	})
 }

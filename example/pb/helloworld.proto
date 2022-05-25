@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option go_package = ".;pb";
+
+package helloworld;
+
+import "validate/validate.proto";
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello(HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+  uint64 id = 2 [ (validate.rules).uint64.gt = 999 ];
+  uint64 id2 = 3 [ (validate.rules).uint64.lt = 99 ];
+}
+
+// The response message containing the greetings
+message HelloReply { string message = 1; }
