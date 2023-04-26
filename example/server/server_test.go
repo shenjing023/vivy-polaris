@@ -75,7 +75,7 @@ func TestError(t *testing.T) {
 
 func TestRegistry(t *testing.T) {
 	conf := clientv3.Config{
-		Endpoints:   []string{"10.0.0.215:2379"},
+		Endpoints:   []string{"127.0.0.1:2379"},
 		DialTimeout: time.Second * 5,
 	}
 	r, err := registry.NewEtcdRegister(conf, pb.Greeter_ServiceDesc, host, fmt.Sprintf("%d", port))

@@ -43,7 +43,7 @@ func TestClient(t *testing.T) {
 
 func TestDiscovery(t *testing.T) {
 	conf := clientv3.Config{
-		Endpoints:   []string{"10.0.0.215:2379"},
+		Endpoints:   []string{"127.0.0.1:2379"},
 		DialTimeout: time.Second * 5,
 	}
 	conn, err := vp_client.NewClientConn(registry.GetServiceTarget(pb.Greeter_ServiceDesc), options.WithEtcdDiscovery(conf, pb.Greeter_ServiceDesc),
