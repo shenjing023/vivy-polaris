@@ -28,8 +28,11 @@ type (
 var strToCode map[string]codes.Code
 
 const (
-	InternalError      = "Service Internal Error"
-	OK            Code = iota
+	InternalError = "Service Internal Error"
+)
+
+const (
+	OK Code = iota
 	Canceled
 	Unknown
 	InvalidArgument
@@ -51,6 +54,7 @@ const (
 var (
 	// ErrMap 对应的grpc error code
 	errMap = map[Code]codes.Code{
+		OK:                 codes.OK,
 		Canceled:           codes.Canceled,
 		Unknown:            codes.Unknown,
 		InvalidArgument:    codes.InvalidArgument,
