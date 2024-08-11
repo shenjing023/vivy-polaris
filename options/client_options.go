@@ -26,7 +26,7 @@ import (
 		InitialBackoff: 默认退避时间
 		MaxBackoff: 最大退避时间
 		BackoffMultiplier: 退避时间增加倍率
-		RetryableStatusCodes: 服务端返回什么错误码才重试
+		RetryableStatusCodes: 服务端返回什么错误码才重试，这里错误码只能是 gRPC 错误码，不支持自定义错误码。
 */
 
 type MethodName struct {

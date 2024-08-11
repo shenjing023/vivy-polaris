@@ -9,10 +9,10 @@ import (
 	"github.com/shenjing023/vivy-polaris/contrib/registry"
 	"github.com/shenjing023/vivy-polaris/contrib/tracing"
 	er "github.com/shenjing023/vivy-polaris/errors"
-	"github.com/shenjing023/vivy-polaris/example/common"
 	"github.com/shenjing023/vivy-polaris/example/pb"
 	"github.com/shenjing023/vivy-polaris/options"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -36,6 +36,18 @@ func TestClient(t *testing.T) {
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
 		s := er.Convert(err)
+		switch s.Code() {
+		case codes.Code(pb.Code_ERROR1):
+			t.Log(s.Message())
+		case codes.Code(pb.Code_ERROR2):
+			t.Log(s.Message())
+		case codes.PermissionDenied:
+			t.Log(s.Message())
+		case codes.Internal:
+			t.Log(s.Message())
+		default:
+			t.Log(s.Code())
+		}
 		t.Fatalf("could not greet: %v", s)
 	}
 	t.Logf("Greeting: %s", r.GetMessage())
@@ -63,40 +75,40 @@ func TestDiscovery(t *testing.T) {
 	t.Logf("Greeting: %s", resp.GetMessage())
 }
 
-func TestRetry(t *testing.T) {
-	conf := clientv3.Config{
-		Endpoints:   []string{"10.0.0.215:2379"},
-		DialTimeout: time.Second * 5,
-	}
-	retry := options.RetryPolicy{
-		MaxAttempts:          3,
-		MaxBackoff:           "3s",
-		InitialBackoff:       ".1s",
-		BackoffMultiplier:    5,
-		RetryableStatusCodes: []string{common.CodeMap[common.CUSTOM_ERR_CODE1]},
-	}
-	mc := options.MethodConfig{
-		Name: []options.MethodName{
-			{Service: pb.Greeter_ServiceDesc.ServiceName, Method: "SayHello"},
-		},
-		RetryPolicy: retry,
-	}
-	conn, err := vp_client.NewClientConn(registry.GetServiceTarget(pb.Greeter_ServiceDesc), options.WithEtcdDiscovery(conf, pb.Greeter_ServiceDesc),
-		options.WithInsecure(), options.WithRRLB(), options.WithRetry(mc))
-	if err != nil {
-		t.Fatalf("net.Connect err: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	resp, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
-	if err != nil {
-		s := er.Convert(err)
-		t.Fatalf("could not greet: %v", s)
-	}
-	t.Logf("Greeting: %s", resp.GetMessage())
-}
+// func TestRetry(t *testing.T) {
+// 	conf := clientv3.Config{
+// 		Endpoints:   []string{"10.0.0.215:2379"},
+// 		DialTimeout: time.Second * 5,
+// 	}
+// 	retry := options.RetryPolicy{
+// 		MaxAttempts:          3,
+// 		MaxBackoff:           "3s",
+// 		InitialBackoff:       ".1s",
+// 		BackoffMultiplier:    5,
+// 		RetryableStatusCodes: []string{common.CodeMap[common.CUSTOM_ERR_CODE1]},
+// 	}
+// 	mc := options.MethodConfig{
+// 		Name: []options.MethodName{
+// 			{Service: pb.Greeter_ServiceDesc.ServiceName, Method: "SayHello"},
+// 		},
+// 		RetryPolicy: retry,
+// 	}
+// 	conn, err := vp_client.NewClientConn(registry.GetServiceTarget(pb.Greeter_ServiceDesc), options.WithEtcdDiscovery(conf, pb.Greeter_ServiceDesc),
+// 		options.WithInsecure(), options.WithRRLB(), options.WithRetry(mc))
+// 	if err != nil {
+// 		t.Fatalf("net.Connect err: %v", err)
+// 	}
+// 	defer conn.Close()
+// 	c := pb.NewGreeterClient(conn)
+// 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+// 	defer cancel()
+// 	resp, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+// 	if err != nil {
+// 		s := er.Convert(err)
+// 		t.Fatalf("could not greet: %v", s)
+// 	}
+// 	t.Logf("Greeting: %s", resp.GetMessage())
+// }
 
 func TestRateLimit(t *testing.T) {
 	// Set up a connection to the server.

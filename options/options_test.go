@@ -5,14 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shenjing023/vivy-polaris/errors"
-
 	"golang.org/x/time/rate"
-)
-
-const (
-	CUSTOM_ERROR1 errors.Code = 100
-	CUSTOM_ERROR2 errors.Code = 101
 )
 
 func TestServiceConfig(t *testing.T) {
@@ -23,7 +16,7 @@ func TestServiceConfig(t *testing.T) {
 		MaxBackoff:           "1s",
 		InitialBackoff:       "1s",
 		BackoffMultiplier:    5,
-		RetryableStatusCodes: []string{"CUSTOM_ERROR1", "CUSTOM_ERROR2"},
+		RetryableStatusCodes: []string{"Unavailable", "DataLoss"},
 	}
 	mc := MethodConfig{
 		Name: []MethodName{
