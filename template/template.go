@@ -2,7 +2,6 @@ package template
 
 import (
 	"go/build"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -47,7 +46,7 @@ func goModuleRoot(dir string) (string, bool) {
 			break
 		}
 
-		if content, err := ioutil.ReadFile(filepath.Join(modDir, "go.mod")); err == nil {
+		if content, err := os.ReadFile(filepath.Join(modDir, "go.mod")); err == nil {
 			moduleName := string(modregex.FindSubmatch(content)[1])
 			result = goModuleSearchResult{
 				path:       moduleName,

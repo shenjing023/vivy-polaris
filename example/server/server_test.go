@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -16,7 +17,7 @@ import (
 	"github.com/shenjing023/vivy-polaris/contrib/tracing"
 	er "github.com/shenjing023/vivy-polaris/errors"
 	"github.com/shenjing023/vivy-polaris/example/pb"
-	"github.com/shenjing023/vivy-polaris/options"
+	llog "github.com/shenjing023/vivy-polaris/log"
 	vp_server "github.com/shenjing023/vivy-polaris/server"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
@@ -92,7 +93,7 @@ func TestRegistry(t *testing.T) {
 
 func TestRateLimit(t *testing.T) {
 	tbp := ratelimit.TBPair{Method: fmt.Sprintf("/%s/%s", pb.Greeter_ServiceDesc.ServiceName, "SayHello"), Rate: 5, Tokens: 5}
-	srv := vp_server.NewServer(options.WithTBRL(tbp))
+	srv := vp_server.NewServer(vp_server.WithTBRL(tbp))
 	pb.RegisterGreeterServer(srv, &test_server{})
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {
@@ -101,7 +102,8 @@ func TestRateLimit(t *testing.T) {
 }
 
 func TestDebug(t *testing.T) {
-	srv := vp_server.NewServer(options.WithDebug(true))
+	llog.Init(llog.WithLevel(slog.LevelDebug))
+	srv := vp_server.NewServer(vp_server.WithDebug(true))
 	pb.RegisterGreeterServer(srv, &test_server{})
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {
@@ -122,7 +124,7 @@ func TestTracing(t *testing.T) {
 		}
 	}()
 
-	srv := vp_server.NewServer(options.WithDebug(true), options.WithServerTracing(tp))
+	srv := vp_server.NewServer(vp_server.WithDebug(true), vp_server.WithServerTracing(tp))
 	pb.RegisterGreeterServer(srv, &test_server{})
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {
@@ -131,7 +133,7 @@ func TestTracing(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	srv := vp_server.NewServer(options.WithServerValidator(false))
+	srv := vp_server.NewServer(vp_server.WithServerValidator(false))
 	pb.RegisterGreeterServer(srv, &test_server{})
 	t.Logf("server listening at %v", lis.Addr())
 	if err := srv.Serve(lis); err != nil {

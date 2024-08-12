@@ -10,7 +10,6 @@ import (
 	"github.com/shenjing023/vivy-polaris/contrib/tracing"
 	er "github.com/shenjing023/vivy-polaris/errors"
 	"github.com/shenjing023/vivy-polaris/example/pb"
-	"github.com/shenjing023/vivy-polaris/options"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,7 +22,7 @@ var (
 
 func TestClient(t *testing.T) {
 	// Set up a connection to the server.
-	conn, err := vp_client.NewClientConn(addr, options.WithInsecure())
+	conn, err := vp_client.NewClientConn(addr, vp_client.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -58,8 +57,8 @@ func TestDiscovery(t *testing.T) {
 		Endpoints:   []string{"127.0.0.1:2379"},
 		DialTimeout: time.Second * 5,
 	}
-	conn, err := vp_client.NewClientConn(registry.GetServiceTarget(pb.Greeter_ServiceDesc), options.WithEtcdDiscovery(conf, pb.Greeter_ServiceDesc),
-		options.WithInsecure(), options.WithRRLB())
+	conn, err := vp_client.NewClientConn(registry.GetServiceTarget(pb.Greeter_ServiceDesc), vp_client.WithEtcdDiscovery(conf, pb.Greeter_ServiceDesc),
+		vp_client.WithInsecure(), vp_client.WithRRLB())
 	if err != nil {
 		t.Fatalf("net.Connect err: %v", err)
 	}
@@ -112,7 +111,7 @@ func TestDiscovery(t *testing.T) {
 
 func TestRateLimit(t *testing.T) {
 	// Set up a connection to the server.
-	conn, err := vp_client.NewClientConn(addr, options.WithInsecure())
+	conn, err := vp_client.NewClientConn(addr, vp_client.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -153,7 +152,7 @@ func TestTracing(t *testing.T) {
 		}
 	}()
 
-	conn, err := vp_client.NewClientConn(addr, options.WithInsecure(), options.WithClientTracing(tp))
+	conn, err := vp_client.NewClientConn(addr, vp_client.WithInsecure(), vp_client.WithClientTracing(tp))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -169,7 +168,7 @@ func TestTracing(t *testing.T) {
 
 func TestError(t *testing.T) {
 	// Set up a connection to the server.
-	conn, err := vp_client.NewClientConn(addr, options.WithInsecure())
+	conn, err := vp_client.NewClientConn(addr, vp_client.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -196,7 +195,7 @@ func TestError(t *testing.T) {
 }
 
 func TestRetry2(t *testing.T) {
-	retry := options.RetryPolicy{
+	retry := vp_client.RetryPolicy{
 		MaxAttempts:          3,
 		MaxBackoff:           "3s",
 		InitialBackoff:       ".1s",
@@ -204,13 +203,13 @@ func TestRetry2(t *testing.T) {
 		RetryableStatusCodes: []string{pb.Code_name[int32(pb.Code_ERROR1)]},
 		// RetryableStatusCodes: []string{common.CodeMap[common.CUSTOM_ERR_CODE1]},
 	}
-	mc := options.MethodConfig{
-		Name: []options.MethodName{
+	mc := vp_client.MethodConfig{
+		Name: []vp_client.MethodName{
 			{Service: pb.Greeter_ServiceDesc.ServiceName, Method: "SayHello"},
 		},
 		RetryPolicy: retry,
 	}
-	conn, err := vp_client.NewClientConn(addr, options.WithInsecure(), options.WithRetry(mc))
+	conn, err := vp_client.NewClientConn(addr, vp_client.WithInsecure(), vp_client.WithRetry(mc))
 	if err != nil {
 		t.Fatalf("net.Connect err: %v", err)
 	}
@@ -228,7 +227,7 @@ func TestRetry2(t *testing.T) {
 
 func TestValidator(t *testing.T) {
 	// Set up a connection to the server.
-	conn, err := vp_client.NewClientConn(addr, options.WithInsecure(), options.WithClientValidator(true))
+	conn, err := vp_client.NewClientConn(addr, vp_client.WithInsecure(), vp_client.WithClientValidator(true))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}

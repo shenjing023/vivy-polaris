@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -22,7 +21,7 @@ type Config struct {
 
 // init global config
 func init() {
-	file, err := ioutil.ReadFile("gen.yaml")
+	file, err := os.ReadFile("gen.yaml")
 	if err != nil {
 		fmt.Println("Open config file error: ", err.Error())
 		os.Exit(1)

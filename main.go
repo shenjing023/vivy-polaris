@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -93,9 +92,9 @@ func main() {
 }
 
 /*
-   protoDir: proto文件路径目录
-   dstDir: 生成的go文件路径目录
-   protoFiles: 指定需要的proto文件名称
+protoDir: proto文件路径目录
+dstDir: 生成的go文件路径目录
+protoFiles: 指定需要的proto文件名称
 */
 func generateProtoFile(protoDir, dstDir string, protoFiles ...string) {
 	cmds := []string{
@@ -106,9 +105,7 @@ func generateProtoFile(protoDir, dstDir string, protoFiles ...string) {
 		"--go-grpc_opt=paths=source_relative",
 		// strings.Join(protoFiles, " "), // 注意：protoFiles不能放在这里，否则exec会把这个当成一个文件名
 	}
-	for _, f := range protoFiles {
-		cmds = append(cmds, f)
-	}
+	cmds = append(cmds, protoFiles...)
 	cmd := exec.Command("protoc", cmds...)
 	output, err := RunExecCommand(cmd, false, 3)
 	if err != nil {
@@ -137,7 +134,7 @@ func RunExecCommand(cmd *exec.Cmd, stdout bool, timeout int) (string, error) {
 		err = errors.New("run command timeout")
 	})
 	defer killer.Stop()
-	outputBytes, _ := ioutil.ReadAll(out)
+	outputBytes, _ := io.ReadAll(out)
 	if err := cmd.Wait(); err != nil {
 		log.Println("read command error: ", err)
 		return string(outputBytes), err

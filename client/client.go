@@ -8,9 +8,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewClientConnContext(ctx context.Context, target string, opts ...options.ClientOption) (*grpc.ClientConn, error) {
+func NewClientConnContext(ctx context.Context, target string, opts ...options.Option[clientOptions]) (*grpc.ClientConn, error) {
 	// options:=[]grpc.DialOption{grpc.WithInsecure()}
-	opt, err := options.NewClientOptions(opts...)
+	opt, err := NewClientOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -21,6 +21,6 @@ func NewClientConnContext(ctx context.Context, target string, opts ...options.Cl
 	return conn, nil
 }
 
-func NewClientConn(target string, opts ...options.ClientOption) (*grpc.ClientConn, error) {
+func NewClientConn(target string, opts ...options.Option[clientOptions]) (*grpc.ClientConn, error) {
 	return NewClientConnContext(context.Background(), target, opts...)
 }

@@ -1,9 +1,10 @@
-package options
+package client
 
 import (
 	"encoding/json"
 
 	"github.com/shenjing023/vivy-polaris/contrib/registry"
+	"github.com/shenjing023/vivy-polaris/options"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -29,6 +30,11 @@ import (
 		RetryableStatusCodes: 服务端返回什么错误码才重试，这里错误码只能是 gRPC 错误码，不支持自定义错误码。
 */
 
+type clientOptions struct {
+	opts          []grpc.DialOption
+	serviceConfig ServiceConfig
+}
+
 type MethodName struct {
 	Service string `json:"service"`
 	Method  string `json:"method"`
@@ -52,12 +58,12 @@ type ServiceConfig struct {
 	LoadBalancingPolicy string         `json:"loadBalancingPolicy,omitempty"`
 }
 
-func NewClientOptions(opts ...ClientOption) (*[]grpc.DialOption, error) {
+func NewClientOptions(opts ...options.Option[clientOptions]) (*[]grpc.DialOption, error) {
 	copt := &clientOptions{
 		opts: make([]grpc.DialOption, 0),
 	}
 	for _, opt := range opts {
-		opt.apply(copt)
+		opt.Apply(copt)
 	}
 	sc, err := json.Marshal(copt.serviceConfig)
 	if err != nil {
@@ -67,27 +73,27 @@ func NewClientOptions(opts ...ClientOption) (*[]grpc.DialOption, error) {
 	return &copt.opts, nil
 }
 
-func WithInsecure() ClientOption {
-	return newFuncClientOption(func(o *clientOptions) {
+func WithInsecure() options.Option[clientOptions] {
+	return options.NewFuncOption(func(o *clientOptions) {
 		o.opts = append(o.opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	})
 }
 
-func WithRetry(mc ...MethodConfig) ClientOption {
-	return newFuncClientOption(func(o *clientOptions) {
+func WithRetry(mc ...MethodConfig) options.Option[clientOptions] {
+	return options.NewFuncOption(func(o *clientOptions) {
 		o.serviceConfig.Methodconfig = mc
 	})
 }
 
 // round_robin load balancing policy
-func WithRRLB() ClientOption {
-	return newFuncClientOption(func(o *clientOptions) {
+func WithRRLB() options.Option[clientOptions] {
+	return options.NewFuncOption(func(o *clientOptions) {
 		o.serviceConfig.LoadBalancingPolicy = "round_robin"
 	})
 }
 
-func WithEtcdDiscovery(conf clientv3.Config, serviceDesc grpc.ServiceDesc) ClientOption {
-	return newFuncClientOption(func(o *clientOptions) {
+func WithEtcdDiscovery(conf clientv3.Config, serviceDesc grpc.ServiceDesc) options.Option[clientOptions] {
+	return options.NewFuncOption(func(o *clientOptions) {
 		r, err := registry.NewEtcdResolver(conf, serviceDesc)
 		if err != nil {
 			panic(err)
@@ -96,18 +102,18 @@ func WithEtcdDiscovery(conf clientv3.Config, serviceDesc grpc.ServiceDesc) Clien
 	})
 }
 
-func WithClientTracing(tp *sdktrace.TracerProvider) ClientOption {
+func WithClientTracing(tp *sdktrace.TracerProvider) options.Option[clientOptions] {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	return newFuncClientOption(func(o *clientOptions) {
+	return options.NewFuncOption(func(o *clientOptions) {
 		o.opts = append(o.opts, grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	})
 }
 
 // WithClientValidator validate fields,
 // all==true return all fields error, otherwise return first error
-func WithClientValidator(all bool) ClientOption {
-	return newFuncClientOption(func(so *clientOptions) {
+func WithClientValidator(all bool) options.Option[clientOptions] {
+	return options.NewFuncOption(func(so *clientOptions) {
 		so.opts = append(so.opts, grpc.WithUnaryInterceptor(validator.UnaryClientInterceptor(all)))
 	})
 }

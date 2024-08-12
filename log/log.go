@@ -3,7 +3,6 @@
 package log
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -14,7 +13,8 @@ import (
 
 var (
 	defaultOption = loggerOptions{
-		maxFrameDepth: 10,
+		maxFrameDepth: 5,
+		level:         slog.LevelInfo,
 	}
 )
 
@@ -79,9 +79,10 @@ func Init(opts ...options.Option[loggerOptions]) {
 	for _, opt := range opts {
 		opt.Apply(&defaultOption)
 	}
-	fmt.Printf("log init with options: %v\n", defaultOption)
+
 	h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		ReplaceAttr: replaceAttr,
+		Level:       defaultOption.level,
 	})
 	slog.SetDefault(slog.New(h))
 }
