@@ -16,31 +16,31 @@ import (
     "net"
     "os"
     "os/signal"
-	"syscall"
+    "syscall"
 
     pb "xxxx"
 )
 
 func main() {
     lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 8888))
-	if err != nil {
-		log.Fatalf("failed to listen: %+v", err)
-	}
-	s := vp_server.NewServer()
-	pb.RegisterXXXXXServer(s, &handler.Server{})
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %+v", err)
-		}
-	}()
-	log.Printf("%s server start success, port: %d", conf.ServerCfg.ServerName, conf.ServerCfg.Port)
+    if err != nil {
+        log.Fatalf("failed to listen: %+v", err)
+    }
+    s := vp_server.NewServer()
+    pb.RegisterXXXXXServer(s, &handler.Server{})
+    go func() {
+        if err := s.Serve(lis); err != nil {
+            log.Fatalf("failed to serve: %+v", err)
+        }
+    }()
+    log.Printf("%s server start success, port: %d", conf.ServerCfg.ServerName, conf.ServerCfg.Port)
 
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	<-quit
-	log.Printf("signal %d received and shutdown service", quit)
-	s.GracefulStop()
+    // Wait for interrupt signal to gracefully shutdown the server
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+    <-quit
+    log.Printf("signal %d received and shutdown service", quit)
+    s.GracefulStop()
 }
 
 ```
