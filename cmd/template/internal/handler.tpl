@@ -1,6 +1,6 @@
 package internal
 
-import "{{.PkgName}}/pkg/grpc/pb"
+import "{{.PkgName}}/{{.GRPCPath}}"
 
 type Server struct {
 	pb.Unimplemented{{.ServerName}}Server

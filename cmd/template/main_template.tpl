@@ -9,7 +9,7 @@ import (
 	"path"
 	"syscall"
 
-    log "github.com/shenjing023/llog"
+    "log"
 	conf "{{.PkgName}}/config"
 	vp_server "github.com/shenjing023/vivy-polaris/server"
 	handler "{{.PkgName}}/internal"
@@ -43,12 +43,12 @@ func runServer() {
 			log.Fatalf("failed to serve: %+v", err)
 		}
 	}()
-	log.Infof("%s server start success", conf.ServerCfg.ServerName)
+	log.Printf("%s server start success, port: %d", conf.ServerCfg.ServerName, conf.ServerCfg.Port)
 
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-quit
-	log.Infof("signal %d received and shutdown service", quit)
+	log.Printf("signal %d received and shutdown service", quit)
 	s.GracefulStop()
 }
