@@ -3,15 +3,19 @@
 package log
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/mdobak/go-xerrors"
+	"github.com/shenjing023/vivy-polaris/options"
 )
 
 var (
-	defaultMaxDepth = 10
+	defaultOption = loggerOptions{
+		maxFrameDepth: 10,
+	}
 )
 
 type stackFrame struct {
@@ -38,8 +42,8 @@ func marshalStack(err error) []stackFrame {
 		return nil
 	}
 	frames := trace.Frames()
-	if len(frames) > defaultMaxDepth {
-		frames = frames[:defaultMaxDepth]
+	if len(frames) > defaultOption.maxFrameDepth {
+		frames = frames[:defaultOption.maxFrameDepth]
 	}
 	s := make([]stackFrame, len(frames))
 	for i, v := range frames {
@@ -71,7 +75,11 @@ func fmtErr(err error) slog.Value {
 	return slog.GroupValue(groupValues...)
 }
 
-func Init() {
+func Init(opts ...options.Option[loggerOptions]) {
+	for _, opt := range opts {
+		opt.Apply(&defaultOption)
+	}
+	fmt.Printf("log init with options: %v\n", defaultOption)
 	h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		ReplaceAttr: replaceAttr,
 	})
