@@ -142,7 +142,7 @@ func TestTracing(t *testing.T) {
 	ctx := context.Background()
 
 	jaegerCollectURL := "http://10.0.0.215:14268/api/traces"
-	tp, err := tracing.NewJaegerTracerProvider(jaegerCollectURL, "test-client")
+	tp, err := tracing.NewOTLPTracerProvider(jaegerCollectURL, "test-client")
 	if err != nil {
 		t.Fatal(err)
 	}
