@@ -38,7 +38,7 @@ func NewEtcdRegister(conf clientv3.Config, serviceDesc grpc.ServiceDesc, host, p
 	}
 
 	//lease
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), conf.DialTimeout)
 	defer cancel()
 	resp, err := cli.Grant(ctx, r.ttl)
 	if err != nil {
