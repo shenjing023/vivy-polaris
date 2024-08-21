@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -18,18 +19,64 @@ type etcdResolver struct {
 	cc          resolver.ClientConn
 	schema      string
 	serviceDesc grpc.ServiceDesc
+	closeCh     chan struct{}
 }
 
 func NewEtcdResolver(conf clientv3.Config, serviceDesc grpc.ServiceDesc) (resolver.Builder, error) {
+	conf.AutoSyncInterval = time.Minute * 5
 	cli, err := clientv3.New(conf)
 	if err != nil {
 		return nil, err
 	}
-	return &etcdResolver{
+	r := &etcdResolver{
 		cli:         cli,
 		schema:      "svc",
 		serviceDesc: serviceDesc,
-	}, nil
+		closeCh:     make(chan struct{}),
+	}
+	// 启动保活协程
+	go r.keepAlive()
+	return r, nil
+}
+
+func (d *etcdResolver) keepAlive() {
+	ticker := time.NewTicker(time.Second * 10)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-d.closeCh:
+			return
+		case <-ticker.C:
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+			_, err := d.cli.Get(ctx, "keepalive")
+			cancel()
+			if err != nil {
+				log.Printf("etcd keepalive failed: %v", err)
+				d.reconnect()
+			}
+		}
+	}
+}
+
+func (d *etcdResolver) reconnect() {
+	for {
+		if err := d.cli.Close(); err != nil {
+			log.Printf("failed to close etcd client: %v", err)
+		}
+		newCli, err := clientv3.New(clientv3.Config{
+			Endpoints:        d.cli.Endpoints(),
+			DialTimeout:      5 * time.Second,
+			AutoSyncInterval: 5 * time.Minute,
+		})
+		if err != nil {
+			log.Printf("failed to create new etcd client: %v", err)
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		d.cli = newCli
+		log.Println("etcd client reconnected successfully")
+		return
+	}
 }
 
 // Build 当调用`grpc.Dial()`时执行
@@ -118,6 +165,7 @@ func (d *etcdResolver) ResolveNow(rn resolver.ResolveNowOptions) {
 // Close 当调用`grpc.ClientConn.Close()`时执行
 func (d *etcdResolver) Close() {
 	d.cli.Close()
+	close(d.closeCh)
 }
 
 func getPrefix(serviceDesc grpc.ServiceDesc) string {
