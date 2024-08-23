@@ -14,7 +14,6 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/resolver"
 )
 
 /*	methodConfig配置信息
@@ -70,6 +69,12 @@ func NewClientOptions(opts ...options.Option[clientOptions]) (*[]grpc.DialOption
 		return nil, err
 	}
 	copt.opts = append(copt.opts, grpc.WithDefaultServiceConfig(string(sc)))
+	// var kacp = keepalive.ClientParameters{
+	// 	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+	// 	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+	// 	PermitWithoutStream: true,             // send pings even without active streams
+	// }
+	// copt.opts = append(copt.opts, grpc.WithKeepaliveParams(kacp))
 	return &copt.opts, nil
 }
 
@@ -98,7 +103,8 @@ func WithEtcdDiscovery(conf clientv3.Config, serviceDesc grpc.ServiceDesc) optio
 		if err != nil {
 			panic(err)
 		}
-		resolver.Register(r)
+		o.opts = append(o.opts, grpc.WithResolvers(r))
+		// resolver.Register(r)
 	})
 }
 

@@ -14,7 +14,7 @@ func NewClientConnContext(ctx context.Context, target string, opts ...options.Op
 	if err != nil {
 		return nil, err
 	}
-	conn, err := grpc.DialContext(ctx, target, *opt...)
+	conn, err := grpc.NewClient(target, *opt...)
 	if err != nil {
 		return nil, err
 	}

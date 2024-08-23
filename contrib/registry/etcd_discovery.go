@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/cockroachdb/errors"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	etcdnaming "go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/resolver"
 )
@@ -19,10 +21,22 @@ type etcdResolver struct {
 	cc          resolver.ClientConn
 	schema      string
 	serviceDesc grpc.ServiceDesc
-	closeCh     chan struct{}
 }
 
 func NewEtcdResolver(conf clientv3.Config, serviceDesc grpc.ServiceDesc) (resolver.Builder, error) {
+	cli, err := clientv3.New(conf)
+	if err != nil {
+		return nil, err
+	}
+	r, err := etcdnaming.NewBuilder(cli)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// Deprecated: Use [NewEtcdResolver] instead.
+func NewEtcdResolver2(conf clientv3.Config, serviceDesc grpc.ServiceDesc) (resolver.Builder, error) {
 	conf.AutoSyncInterval = time.Minute * 5
 	cli, err := clientv3.New(conf)
 	if err != nil {
@@ -30,9 +44,8 @@ func NewEtcdResolver(conf clientv3.Config, serviceDesc grpc.ServiceDesc) (resolv
 	}
 	r := &etcdResolver{
 		cli:         cli,
-		schema:      "svc",
+		schema:      "etcd",
 		serviceDesc: serviceDesc,
-		closeCh:     make(chan struct{}),
 	}
 	// 启动保活协程
 	go r.keepAlive()
@@ -40,25 +53,21 @@ func NewEtcdResolver(conf clientv3.Config, serviceDesc grpc.ServiceDesc) (resolv
 }
 
 func (d *etcdResolver) keepAlive() {
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Second * 2)
 	defer ticker.Stop()
-	for {
-		select {
-		case <-d.closeCh:
-			return
-		case <-ticker.C:
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-			_, err := d.cli.Get(ctx, "keepalive")
-			cancel()
-			if err != nil {
-				log.Printf("etcd keepalive failed: %v", err)
-				d.reconnect()
-			}
+	for range ticker.C {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		_, err := d.cli.Get(ctx, "keepalive")
+		cancel()
+		if err != nil {
+			log.Printf("etcd keepalive failed: %v", err)
+			d.reconnect()
 		}
 	}
 }
 
 func (d *etcdResolver) reconnect() {
+	log.Println("etcd reconnect")
 	for {
 		if err := d.cli.Close(); err != nil {
 			log.Printf("failed to close etcd client: %v", err)
@@ -164,12 +173,13 @@ func (d *etcdResolver) ResolveNow(rn resolver.ResolveNowOptions) {
 
 // Close 当调用`grpc.ClientConn.Close()`时执行
 func (d *etcdResolver) Close() {
+	log.Println("etcd resolver close")
+	log.Printf("Close called from: %s", debug.Stack())
 	d.cli.Close()
-	close(d.closeCh)
 }
 
 func getPrefix(serviceDesc grpc.ServiceDesc) string {
-	return fmt.Sprintf("svc:///%s/", serviceDesc.ServiceName)
+	return fmt.Sprintf("etcd:///%s", serviceDesc.ServiceName)
 }
 
 func GetServiceTarget(serviceDesc grpc.ServiceDesc) string {
